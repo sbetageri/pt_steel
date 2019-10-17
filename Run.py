@@ -114,14 +114,14 @@ if __name__ == '__main__':
 
     model = UNet.UNet()
 
-    # optimizer = torch.optim.Adam(model.parameters())
-    # loss_fn = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters())
+    loss_fn = torch.nn.BCEWithLogitsLoss()
 
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
 
-    # model = train(model, train_loader, val_loader, optimizer, loss_fn, scheduler, writer)
+    model = train(model, train_loader, val_loader, 1, optimizer, loss_fn, scheduler, writer)
 
-    # torch.save(model.state_dict(), 'model_weights/')
+    torch.save(model.state_dict(), 'model_weights/')
 
     test_df = pd.read_csv(data.test_csv)[:18]
     test_ds = SegDataset(test_df, data.test_dir, mask_dir=None, dataset_flag=SegDataset.TEST_SET)

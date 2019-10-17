@@ -5,16 +5,16 @@ import torch.nn.functional as F
 class Decoder(nn.Module):
     def __init__(self, in_dim, out_dim, final_dim=4, is_final=False):
         super(Decoder, self).__init__()
-        self.conv1 = nn.Conv2d(in_dim, out_dim, 3)
-        self.conv2 = nn.Conv2d(out_dim, out_dim, 3)
+        self.conv1 = nn.Conv2d(in_dim, out_dim, 3, padding=1)
+        self.conv2 = nn.Conv2d(out_dim, out_dim, 3, padding=1)
 
-        self.t_conv = nn.ConvTranspose2d(out_dim, out_dim/2, 2)
+        self.t_conv = nn.ConvTranspose2d(out_dim, out_dim//2, 2, stride=2)
         self.is_final = is_final
         if self.is_final:
             self.final_conv = nn.Conv2d(out_dim, final_dim, 1)
 
     def forward(self, up_sampled, copied):
-        x = torch.cat((up_sampled, copied))
+        x = torch.cat((up_sampled, copied), dim=1)
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
 

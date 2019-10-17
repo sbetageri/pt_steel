@@ -15,7 +15,7 @@ class UNet(nn.Module):
 
         self.conv1 = nn.Conv2d(512, 1024, 3, padding=1)
         self.conv2 = nn.Conv2d(1024, 1024, 3, padding=1)
-        self.t_conv = nn.ConvTranspose2d(1024, 512, 2)
+        self.t_conv = nn.ConvTranspose2d(1024, 512, 2, stride=2)
 
         self.dec4 = Decoder(1024, 512)
         self.dec3 = Decoder(512, 256)
@@ -24,10 +24,6 @@ class UNet(nn.Module):
 
     def forward(self, x):
         down1, feat1 = self.enc1(x)
-        print(down1.size())
-        print(feat1.size())
-        assert False
-
         down2, feat2 = self.enc2(down1)
         down3, feat3 = self.enc3(down2)
         down4, feat4 = self.enc4(down3)

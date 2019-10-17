@@ -29,13 +29,14 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
         running_channel_dice = [0] * 4
 
         model.train()
-        for idx, (img, mask) in train_loader:
+        for idx, (img, mask) in tqdm(enumerate(train_loader)):
             img = img.to(device)
             mask = mask.to(device)
 
             optim.zero_grad()
             out = model(img)
             loss = loss_fn(out, mask)
+            loss.backward()
             optim.step()
 
             running_loss += loss.item()
@@ -43,7 +44,7 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
         model.eval()
         running_loss = 0
         with torch.no_grad():
-            for idx, (img, mask) in val_loader:
+            for idx, (img, mask) in tqdm(enumerate(val_loader)):
                 img = img.to(device)
                 mask = mask.to(device)
                 out = model(img)
@@ -101,9 +102,9 @@ def dice_calc(pred, mask):
     return (2 * intersection) / (sum_mask + sum_pred)
 
 if __name__ == '__main__':
-    writer = SummaryWriter('runs/')
+    writer = SummaryWriter('runs/steel_trial')
 
-    df = pd.read_csv(data.preproc_train_csv)[:18]
+    df = pd.read_csv(data.preproc_train_csv)
     train_df, val_df = train_test_split(df, test_size=0.15)
 
     train_ds = SegDataset(train_df, data.train_dir, data.train_mask_dir, dataset_flag=SegDataset.TRAIN_SET)
@@ -119,14 +120,12 @@ if __name__ == '__main__':
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
 
-    model = train(model, train_loader, val_loader, 1, optimizer, loss_fn, scheduler, writer)
+    model = train(model, train_loader, val_loader, 20, optimizer, loss_fn, scheduler, writer)
 
     torch.save(model.state_dict(), 'model_weights/')
 
-    test_df = pd.read_csv(data.test_csv)[:18]
+    test_df = pd.read_csv(data.test_csv)
     test_ds = SegDataset(test_df, data.test_dir, mask_dir=None, dataset_flag=SegDataset.TEST_SET)
 
     predictions = predict(model, test_df, test_ds)
     predictions.to_csv('predictions.csv', index=False)
-
-

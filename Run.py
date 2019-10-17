@@ -22,6 +22,7 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
     val_loss = 0
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
 
     for e in range(epochs):
         running_loss = 0

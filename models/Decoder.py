@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 class Decoder(nn.Module):
     def __init__(self, in_dim, out_dim, final_dim=4, is_final=False):
+        super(Decoder, self).__init__()
         self.conv1 = nn.Conv2d(in_dim, out_dim, 3)
         self.conv2 = nn.Conv2d(out_dim, out_dim, 3)
 

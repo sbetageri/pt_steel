@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     model = train(model, train_loader, val_loader, 3, optimizer, loss_fn, scheduler, writer)
 
-    torch.save(model.state_dict(), 'model_weights/')
+    torch.save(model.state_dict(), 'model_weights/small_unet.pt')
 
     test_df = pd.read_csv(data.test_csv)
     test_ds = SegDataset(test_df, data.test_dir, mask_dir=None, dataset_flag=SegDataset.TEST_SET)

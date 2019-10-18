@@ -14,6 +14,7 @@ class SegDataset(Dataset):
         self.mask_dir = mask_dir
         self.flag = dataset_flag
         self.img_transforms = transforms.Compose([
+            transforms.Resize((64, 400)),
             transforms.ToTensor(),
             transforms.Normalize(
                 [0.485, 0.456, 0.406],

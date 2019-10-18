@@ -22,6 +22,7 @@ class SegDataset(Dataset):
             )
         ])
         self.mask_transforms = transforms.Compose([
+            transforms.ToPILImage(),
             transforms.Resize((64, 400)),
             transforms.ToTensor()
         ])

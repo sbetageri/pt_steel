@@ -22,8 +22,6 @@ class SegDataset(Dataset):
             )
         ])
         self.mask_transforms = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((64, 400)),
             transforms.ToTensor()
         ])
 
@@ -50,6 +48,8 @@ class SegDataset(Dataset):
 
         # a because the mask was saved as np.savez_compressed(a=mask)
         mask = np.load(mask_path)['a']
+        mask = mask.astype(int)
+        mask.resize((4, 64, 400))
 
         tnsr_img = self.img_transforms(img)
         tnsr_mask = self.mask_transforms(mask)

@@ -51,6 +51,7 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                 out = model(img)
                 loss = loss_fn(out, mask)
                 running_loss += loss.item()
+        scheduler.step(running_loss)
     return model
 
 def mask2rle(img):
@@ -121,7 +122,7 @@ if __name__ == '__main__':
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
 
-    model = train(model, train_loader, val_loader, 20, optimizer, loss_fn, scheduler, writer)
+    model = train(model, train_loader, val_loader, 3, optimizer, loss_fn, scheduler, writer)
 
     torch.save(model.state_dict(), 'model_weights/')
 

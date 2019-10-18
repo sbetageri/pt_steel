@@ -69,7 +69,11 @@ def mask2rle(img):
 
 def predict(model, dataframe, dataset):
     df = dataframe.copy()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
     for img, img_id in tqdm(dataset):
+        img = img.view(1, *img.size())
+        img = img.to(device)
         masks = model(img)
         for c in range(masks.size(0)):
             rle = mask2rle(masks[c].numpy())

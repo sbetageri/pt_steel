@@ -13,10 +13,10 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, writer, warmup=False):
-    train_iou = np.zeros((1, 4))
-    train_dice = np.zeros((1, 4))
-    val_iou = np.zeros((1, 4))
-    val_dice = np.zeros((1, 4))
+    train_iou = torch.zeros((1, 4))
+    train_dice = torch.zeros((1, 4))
+    val_iou = torch.zeros((1, 4))
+    val_dice = torch.zeros((1, 4))
 
     train_loss = 0
     val_loss = 0
@@ -26,8 +26,8 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
 
     for e in range(epochs):
         running_loss = 0
-        running_iou = np.zeros((1, 4))
-        running_dice = np.zeros((1, 4))
+        running_iou = torch.zeros((1, 4))
+        running_dice = torch.zeros((1, 4))
 
         model.train()
         count = 1
@@ -59,8 +59,8 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                              iou_tag='r_iou', dice_tag='r_dice', loss_tag='r_loss',
                              train_val_tag='train')
 
-                running_iou = np.zeros((1, 4))
-                running_dice = np.zeros((1, 4))
+                running_iou = torch.zeros((1, 4))
+                running_dice = torch.zeros((1, 4))
 
         div_factor = len(train_loader) * train_loader.batch_size
         plot_metrics(writer, train_iou, train_dice, train_loss, div_factor,
@@ -99,8 +99,8 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                                  iou_tag='r_iou', dice_tag='r_dice', loss_tag='r_loss',
                                  train_val_tag='val')
 
-                    running_iou = np.zeros((1, 4))
-                    running_dice = np.zeros((1, 4))
+                    running_iou = torch.zeros((1, 4))
+                    running_dice = torch.zeros((1, 4))
 
             div_factor = len(val_loader) * val_loader.batch_size
             plot_metrics(writer, val_iou, val_dice, val_loss, div_factor,

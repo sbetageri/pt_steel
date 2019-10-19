@@ -59,9 +59,7 @@ class SegDataset(Dataset):
         # a because the mask was saved as np.savez_compressed(a=mask)
         mask = np.load(mask_path)['a']
         if self.warmup:
-            mask.resize((4, 64, 400))
-        else:
-            mask.resize((4, 256, 1600))
+            mask.resize((64, 400))
 
         tnsr_img = self.img_transforms(img)
         tnsr_mask = self.mask_transforms(mask)

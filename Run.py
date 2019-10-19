@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
     model = train(model, warmup_loader,
                   val_loader=None, epochs=3,
-                  optimizer=optimizer, loss_fn=loss_fn,
+                  optim=optimizer, loss_fn=loss_fn,
                   scheduler=None, writer=writer,
                   warmup=True)
 
@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     model = train(model, train_loader,
                   val_loader=val_loader, epochs=20,
-                  optimizer=optimizer, loss_fn=loss_fn,
+                  optim=optimizer, loss_fn=loss_fn,
                   scheduler=scheduler, writer=writer)
 
     model = train(model, train_loader, val_loader, 3, optimizer, loss_fn, scheduler, writer)

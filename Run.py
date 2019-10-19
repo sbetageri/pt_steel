@@ -144,8 +144,8 @@ def plot_metrics(writer, iou, dice, loss, div, iou_tag, dice_tag, loss_tag, trai
     for i in range(4):
         i_tag = iou_tag + 'c' + str(i + 1) + '/' + train_val_tag
         d_tag = dice_tag + 'c' + str(i + 1) + '/' + train_val_tag
-        writer.add_scalar(i_tag, iou[i, i])
-        writer.add_scalar(d_tag, dice[i, i])
+        writer.add_scalar(i_tag, iou[0, i])
+        writer.add_scalar(d_tag, dice[0, i])
 
     writer.add_scalar(iou_tag + '/' + train_val_tag, torch.sum(iou) / 4)
     writer.add_scalar(dice_tag + '/' + train_val_tag, torch.sum(dice) / 4)

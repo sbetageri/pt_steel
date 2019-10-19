@@ -8,19 +8,29 @@ from torch.utils.data import Dataset
 class SegDataset(Dataset):
     TRAIN_SET = 9
     TEST_SET = 27
-    def __init__(self, dataframe, img_dir, mask_dir, dataset_flag=TRAIN_SET):
+    def __init__(self, dataframe, img_dir, mask_dir, dataset_flag=TRAIN_SET, warmup=False):
         self.df = dataframe
         self.img_dir = img_dir
         self.mask_dir = mask_dir
         self.flag = dataset_flag
-        self.img_transforms = transforms.Compose([
-            transforms.Resize((64, 400)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.485, 0.456, 0.406],
-                [0.229, 0.224, 0.225]
-            )
-        ])
+        self.warmup = warmup
+        if self.warmup == True:
+            self.img_transforms = transforms.Compose([
+                transforms.Resize((64, 400)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406],
+                    [0.229, 0.224, 0.225]
+                )
+            ])
+        else:
+            self.img_transforms = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    [0.485, 0.456, 0.406],
+                    [0.229, 0.224, 0.225]
+                )
+            ])
         self.mask_transforms = transforms.Compose([
             transforms.ToTensor()
         ])
@@ -48,7 +58,10 @@ class SegDataset(Dataset):
 
         # a because the mask was saved as np.savez_compressed(a=mask)
         mask = np.load(mask_path)['a']
-        mask.resize((64, 400, 4))
+        if self.warmup:
+            mask.resize((4, 64, 400))
+        else:
+            mask.resize((4, 256, 1600))
 
         tnsr_img = self.img_transforms(img)
         tnsr_mask = self.mask_transforms(mask)

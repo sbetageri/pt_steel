@@ -45,7 +45,7 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
             running_loss += loss.item()
             train_loss += loss.item()
 
-            iou, dice = metric_calc(out.detach().cpu(), mask.detach().cpu())
+            iou, dice = metric_calc(out.cpu().detach(), mask.cpu().detach())
 
             torch.add(running_iou, iou)
             torch.add(running_dice, dice)

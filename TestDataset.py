@@ -13,6 +13,10 @@ if __name__ == '__main__':
 
     img, mask = ds[9]
 
+    print(img.size())
+    print(mask.size())
+    assert False
+
     assert img.size() == (3, 256, 1600)
     print('Image size test passed')
     assert mask.size() == (4, 256, 1600)

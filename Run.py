@@ -18,10 +18,11 @@ def rebatch(tnsr):
     return tnsr
 
 def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, writer, warmup=False):
-    train_iou = torch.zeros((1, 4))
-    train_dice = torch.zeros((1, 4))
-    val_iou = torch.zeros((1, 4))
-    val_dice = torch.zeros((1, 4))
+    train_iou = 0
+    train_dice = 0
+
+    val_iou = 0
+    val_dice = 0
 
     train_loss = 0
     val_loss = 0
@@ -31,14 +32,14 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
 
     for e in range(epochs):
         running_loss = 0
-        running_iou = torch.zeros((1, 4))
-        running_dice = torch.zeros((1, 4))
+        running_iou = 0
+        running_dice = 0
 
         model.train()
         count = 1
         for img, mask in tqdm(train_loader):
             img = rebatch(img)
-            mask = rebatch(img)
+            mask = rebatch(mask)
             count += 1
             img = img.to(device)
             mask = mask.to(device)
@@ -54,10 +55,11 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
 
             iou, dice = metric_calc(out.cpu().detach(), mask.cpu().detach())
 
-            torch.add(running_iou, iou)
-            torch.add(running_dice, dice)
-            torch.add(train_iou, iou)
-            torch.add(train_dice, dice)
+            running_iou += iou
+            running_dice += dice
+
+            train_iou += iou
+            train_dice += dice
 
             if count % 100 == 0:
 
@@ -66,15 +68,9 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                              iou_tag='r_iou', dice_tag='r_dice', loss_tag='r_loss',
                              train_val_tag='train')
 
-                running_iou = torch.zeros((1, 4))
-                running_dice = torch.zeros((1, 4))
+                running_iou = 0
+                running_dice = 0
 
-        div_factor = len(train_loader) * train_loader.batch_size
-        # plot_metrics(writer, train_iou, train_dice, train_loss, div_factor,
-        #              iou_tag='tot_iou', dice_tag='tot_dice', loss_tag='tot_loss',
-        #              train_val_tag='train')
-
-        # continue if warmup
         if warmup:
             continue
 
@@ -96,10 +92,11 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
 
                 iou, dice = metric_calc(out.detach().cpu(), mask.detach().cpu())
 
-                torch.add(running_iou, iou)
-                torch.add(running_dice, dice)
-                torch.add(val_iou, iou)
-                torch.add(val_dice, dice)
+                running_dice += dice
+                running_iou += iou
+
+                val_iou += iou
+                val_dice += iou
 
                 if count % 100 == 0:
                     div_factor = 100 * val_loader.batch_size
@@ -111,10 +108,6 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                     running_iou = torch.zeros((1, 4))
                     running_dice = torch.zeros((1, 4))
 
-            div_factor = len(val_loader) * val_loader.batch_size
-            # plot_metrics(writer, val_iou, val_dice, val_loss, div_factor,
-            #              iou_tag='tot_iou', dice_tag='tot_dice', loss_tag='tot_loss',
-            #              train_val_tag='val')
         scheduler.step(running_loss)
     return model
 
@@ -171,36 +164,36 @@ def plot_metrics(writer, iou, dice, loss, div, iou_tag, dice_tag, loss_tag, trai
 
 def metric_calc(pred, mask):
     pred = torch.round(pred)
+
     pred = pred.byte()
     mask = mask.byte()
 
-    ## Assuming Pred is already discrete 0/1. Byte tensors
-    pred = pred.byte()
-    mask = mask.byte()
-    iou = torch.zeros(*pred.size()[:2], 1)
-    dice = torch.zeros(*pred.size()[:2], 1)
+    pred = pred.view(1, -1)
+    mask = mask.view(1, -1)
 
-    pred = pred.view(*pred.size()[:2], -1)
-    mask = mask.view(*mask.size()[:2], -1)
+    print(torch.sum(pred))
+    print(torch.sum(mask))
 
-    ## Batch
-    for b in range(pred.size(0)):
-        ## Channels
-        for c in range(pred.size(1)):
-            intersection = torch.sum(pred & mask)
-            union = torch.sum(pred | mask)
-            denom = torch.sum(pred) + torch.sum(mask)
-            if union == 0:
-                iou[b, c] = 0
-            else:
-                iou[b, c] = intersection / union
+    intersection = torch.sum(pred & mask)
+    union = torch.sum(pred | mask)
+    denom = torch.sum(pred) + torch.sum(mask)
 
-            if denom == 0:
-                dice[b, c] = 0
-            else:
-                dice[b, c] = (2 * intersection) / denom
+    print('Intersection : ', intersection)
+    print('Union : ', union)
+    print('Denom : ', denom)
+    assert False
+
+    if union == 0:
+        iou = 0
+    else:
+        iou = intersection / union
+
+    if denom == 0:
+        dice = 0
+    else:
+        dice = (2 * intersection) / denom
+
     return iou, dice
-
 
 def dice_calc(pred, mask):
     intersection = torch.sum(pred & mask)

@@ -1,3 +1,4 @@
+import torch
 import pandas as pd
 import numpy as np
 
@@ -38,13 +39,20 @@ class SegDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
+    def split_image(self, t_arr):
+        t_arr = torch.chunk(t_arr, 4, dim=2)
+        t_arr = torch.stack(t_arr, dim=0)
+        return t_arr
+
     def __getitem__(self, idx):
         if self.flag == SegDataset.TEST_SET:
             img_id = self.df.iloc[idx]['ImageId_ClassId']
             img_id = ''.join(img_id.split('.')[:-1])
             img_path = self.img_dir + img_id + '.jpg'
             img = Image.open(img_path)
+
             tnsr_img = self.img_transforms(img)
+            tnsr_img = self.split_image(tnsr_img)
             return tnsr_img, img_id
 
 
@@ -58,11 +66,16 @@ class SegDataset(Dataset):
 
         # a because the mask was saved as np.savez_compressed(a=mask)
         mask = np.load(mask_path)['a']
+        # mask = self.split_image(mask)
         if self.warmup:
             mask.resize((64, 400, 4))
 
-        tnsr_img = self.img_transforms(img)
+        tnsr_imgs = self.img_transforms(img)
+
+        tnsr_imgs = self.split_image(tnsr_imgs)
+
         tnsr_mask = self.mask_transforms(mask)
-        return tnsr_img, tnsr_mask
+        tnsr_mask = self.split_image(tnsr_mask)
+        return tnsr_imgs, tnsr_mask
 
 

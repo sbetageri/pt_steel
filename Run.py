@@ -171,9 +171,6 @@ def metric_calc(pred, mask):
     pred = pred.view(1, -1)
     mask = mask.view(1, -1)
 
-    print(torch.sum(pred))
-    print(torch.sum(mask))
-
     intersection = torch.sum(pred & mask)
     union = torch.sum(pred | mask)
     denom = torch.sum(pred) + torch.sum(mask)

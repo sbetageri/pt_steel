@@ -12,6 +12,11 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+def rebatch(tnsr):
+    b, nsplit, c, h, w = tnsr.size()
+    tnsr = tnsr.view(-1, c, h, w)
+    return tnsr
+
 def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, writer, warmup=False):
     train_iou = torch.zeros((1, 4))
     train_dice = torch.zeros((1, 4))
@@ -32,6 +37,8 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
         model.train()
         count = 1
         for img, mask in tqdm(train_loader):
+            img = rebatch(img)
+            mask = rebatch(img)
             count += 1
             img = img.to(device)
             mask = mask.to(device)
@@ -63,9 +70,9 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                 running_dice = torch.zeros((1, 4))
 
         div_factor = len(train_loader) * train_loader.batch_size
-        plot_metrics(writer, train_iou, train_dice, train_loss, div_factor,
-                     iou_tag='tot_iou', dice_tag='tot_dice', loss_tag='tot_loss',
-                     train_val_tag='train')
+        # plot_metrics(writer, train_iou, train_dice, train_loss, div_factor,
+        #              iou_tag='tot_iou', dice_tag='tot_dice', loss_tag='tot_loss',
+        #              train_val_tag='train')
 
         # continue if warmup
         if warmup:
@@ -77,6 +84,8 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
         with torch.no_grad():
             count = 0
             for img, mask in tqdm(val_loader):
+                img = rebatch(img)
+                mask = rebatch(img)
                 count += 1
                 img = img.to(device)
                 mask = mask.to(device)
@@ -103,9 +112,9 @@ def train(model, train_loader, val_loader, epochs, optim, loss_fn, scheduler, wr
                     running_dice = torch.zeros((1, 4))
 
             div_factor = len(val_loader) * val_loader.batch_size
-            plot_metrics(writer, val_iou, val_dice, val_loss, div_factor,
-                         iou_tag='tot_iou', dice_tag='tot_dice', loss_tag='tot_loss',
-                         train_val_tag='val')
+            # plot_metrics(writer, val_iou, val_dice, val_loss, div_factor,
+            #              iou_tag='tot_iou', dice_tag='tot_dice', loss_tag='tot_loss',
+            #              train_val_tag='val')
         scheduler.step(running_loss)
     return model
 
@@ -117,6 +126,7 @@ def mask2rle(img):
     '''
     pixels= img.T.flatten()
     pixels = np.concatenate([[0], pixels, [0]])
+    print('Pixel shape : ', pixels.shape)
     runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
     runs[1::2] -= runs[::2]
     return ' '.join(str(x) for x in runs)
@@ -126,26 +136,34 @@ def predict(model, dataframe, dataset):
     df = dataframe.copy()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    for img, img_id in tqdm(dataset):
-        img = img.view(1, *img.size())
-        img = img.to(device)
-        masks = model(img)
-        for c in range(masks.size(0)):
-            rle = mask2rle(masks[c].numpy())
-            c_img_id = img_id + '.jpg_' + str(c + 1)
-            df.loc[df['ImageId_ClassId'] == c_img_id, ['EncodedPixels']] = rle
+    with torch.no_grad():
+        for img, img_id in tqdm(dataset):
+            img = img.view(1, *img.size())
+            img = rebatch(img)
+            img = img.to(device)
+            masks = model(img)
+
+            masks = torch.chunk(masks, 4, dim=0)
+            masks = [mask.view(mask.size()[1:]) for mask in masks]
+            masks = torch.cat(masks, dim=2)
+            masks = masks
+            masks = torch.round(masks)
+            masks = masks.byte()
+            # masks = masks.view((4, 1600, 256))
+            # mrle = mask2rle(masks)
+            # masks = masks.view(masks.size()[1:])
+            # print(masks.size())
+            for c in range(masks.size(0)):
+                print('Channel size : ', masks[c].size())
+                rle = mask2rle(masks[c].numpy())
+                c_img_id = img_id + '.jpg_' + str(c + 1)
+                df.loc[df['ImageId_ClassId'] == c_img_id, ['EncodedPixels']] = rle
     return df
 
 def plot_metrics(writer, iou, dice, loss, div, iou_tag, dice_tag, loss_tag, train_val_tag):
     iou = torch.div(iou, div)
     dice = torch.div(dice, div)
     loss = torch.div(loss, div)
-
-    for i in range(4):
-        i_tag = iou_tag + 'c' + str(i + 1) + '/' + train_val_tag
-        d_tag = dice_tag + 'c' + str(i + 1) + '/' + train_val_tag
-        writer.add_scalar(i_tag, iou[0, i])
-        writer.add_scalar(d_tag, dice[0, i])
 
     writer.add_scalar(iou_tag + '/' + train_val_tag, torch.sum(iou) / 4)
     writer.add_scalar(dice_tag + '/' + train_val_tag, torch.sum(dice) / 4)
@@ -198,7 +216,7 @@ if __name__ == '__main__':
     df = pd.read_csv(data.preproc_train_csv)
     train_df, val_df = train_test_split(df, test_size=0.15)
 
-    warmup_ds = SegDataset(train_df, data.train_dir, data.train_mask_dir, dataset_flag=SegDataset.TRAIN_SET, warmup=True)
+    warmup_ds = SegDataset(train_df, data.train_dir, data.train_mask_dir, dataset_flag=SegDataset.TRAIN_SET)
     warmup_loader = DataLoader(warmup_ds, batch_size=2)
 
     train_ds = SegDataset(train_df, data.train_dir, data.train_mask_dir, dataset_flag=SegDataset.TRAIN_SET)

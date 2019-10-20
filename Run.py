@@ -178,11 +178,6 @@ def metric_calc(pred, mask):
     union = torch.sum(pred | mask)
     denom = torch.sum(pred) + torch.sum(mask)
 
-    print('Intersection : ', intersection)
-    print('Union : ', union)
-    print('Denom : ', denom)
-    assert False
-
     if union == 0:
         iou = 0
     else:
